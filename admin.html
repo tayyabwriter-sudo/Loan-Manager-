@@ -221,6 +221,9 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // Enable offline data persistence explicitly
+    db.enablePersistence().catch(err => console.log("Persistence status:", err.code));
+
     let currentUser = null;
     let records = [];
     let whatsappNumbers = {};
@@ -298,14 +301,14 @@
 
         if (unsubscribeRecords) unsubscribeRecords();
 
-        // Fixed Collection Group Listening Path for real-time Sync
+        // Single Dual-Write Path Fix
         unsubscribeRecords = db.collection('shops').doc(currentUser.uid).collection('records').onSnapshot(snapshot => {
             records = [];
             snapshot.forEach(doc => {
                 records.push({ docId: doc.id, ...doc.data() });
             });
             displayRecords();
-        }, err => alert("Data Load Error: " + err.message));
+        }, err => alert("Data Fetch Error: " + err.message));
 
         db.collection('users').doc(currentUser.uid).collection('settings').doc('numbers').get().then(doc => {
             if (doc.exists) whatsappNumbers = doc.data();
@@ -322,14 +325,14 @@
         const trxId = document.getElementById('trxId').value.trim();
         const paidVia = document.getElementById('paidVia').value;
 
-        if (!foundation || !name || !amount || !paymentDate || !accountId) {
-            alert('Foundation, Account ID, Name, Amount aur Date lazmi darj karein!');
+        if (!foundation || !accountId || !name || !amount || !paymentDate) {
+            alert('Sari zaroori fields (Foundation, Account ID, Name, Amount, Date) darj karein!');
             return;
         }
 
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.disabled = true;
-        saveBtn.innerText = "Saving...";
+        saveBtn.innerText = "Online Save Ho Raha Hai...";
 
         const newRecord = {
             userId: currentUser.uid,
@@ -348,18 +351,18 @@
         };
 
         try {
-            // Customer Portal Compatibility Path
+            // Write to global reachable location for Customer Portal & Admin Sync
             await db.collection('shops').doc(currentUser.uid).collection('records').add(newRecord);
-            
+
             document.getElementById('accountId').value = '';
             document.getElementById('borrowerName').value = '';
             document.getElementById('amount').value = '';
             document.getElementById('trxId').value = '';
             document.getElementById('statusSelect').value = 'Unpaid';
             togglePaidFields();
-            alert("✅ Record DataBase mein Save ho gaya hai!");
+            alert("✅ Record Firestore Online Database Mein Save Ho Gaya!");
         } catch (err) {
-            alert("Record add nahi ho saka: " + err.message);
+            alert("❌ Firebase Server Error: " + err.message);
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerText = "+ Save Record";
