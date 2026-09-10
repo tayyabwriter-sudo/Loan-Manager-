@@ -3,76 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Loan Status Portal</title>
-    <!-- Firebase SDKs -->
+    <title>Customer Portal - Live Status</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
-        body { background-color: #f2f4f7; color: #333; padding: 20px 10px; }
-        
-        .header { background: #1b2a47; color: #fff; padding: 18px; text-align: center; font-size: 20px; font-weight: bold; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .container { max-width: 480px; margin: auto; }
-        .card { background: #ffffff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-        
-        .form-label { font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 4px; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #dcdfe6; border-radius: 8px; font-size: 14px; margin-bottom: 12px; background: #fafafa; outline: none; }
-        .form-control:focus { border-color: #27ae60; background: #fff; }
-
-        .btn-main { width: 100%; background: #1b2a47; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-main:active { background: #0f182b; }
-
-        .record-card { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 6px solid #ccc; }
-        .record-card.status-paid { border-left-color: #27ae60; }
-        .record-card.status-unpaid { border-left-color: #e74c3c; }
-
-        .row-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        .badge-paid { background: #d4edda; color: #155724; }
-        .badge-unpaid { background: #f8d7da; color: #721c24; }
-        
-        .amount { font-size: 20px; font-weight: bold; color: #1b2a47; }
-        .meta-info { font-size: 13px; color: #555; margin-top: 4px; }
-        
-        .shop-info-box { background: #f8f9fa; border: 1px dashed #ced4da; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 13px; color: #2c3e50; }
-
-        #loading { display: none; text-align: center; color: #666; font-weight: bold; margin: 15px 0; }
-        #notFound { display: none; text-align: center; color: #c0392b; font-weight: bold; padding: 15px; }
+        * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f8f9fa; padding: 15px; }
+        .container { max-width: 450px; margin: auto; }
+        .card { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; float: right; }
+        .Unpaid { background: #fce8e6; color: #c5221f; }
+        .Paid { background: #e6f4ea; color: #137333; }
+        .search-box { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        🔍 Loan & Qist Status Portal
+    <div class="card" style="background:#1b2a47; color:#fff;">
+        <h3 style="text-align:center;">📋 Customer Loan Status</h3>
     </div>
 
-    <!-- Filter/Search Form -->
-    <div class="card">
-        <label class="form-label">Account ID / Loan Number (Lazmi):</label>
-        <input type="text" id="searchAccountId" class="form-control" placeholder="e.g. 1024 / ABC-12" onkeyup="if(event.key === 'Enter') searchRecord()">
+    <input type="text" id="searchInput" class="search-box" placeholder="Search by Account ID or Name..." onkeyup="filterData()">
 
-        <label class="form-label">Foundation Select Karein (Optional):</label>
-        <select id="searchFoundation" class="form-control">
-            <option value="All">Tamam Foundations (All)</option>
-            <option value="Kashif">Kashif</option>
-            <option value="RCDP">RCDP</option>
-            <option value="NRSP">NRSP</option>
-            <option value="Halan Bank">Halan Bank</option>
-            <option value="JWS">JWS</option>
-        </select>
-
-        <label class="form-label">Mahina Select Karein (Optional):</label>
-        <input type="month" id="searchMonth" class="form-control">
-
-        <button class="btn-main" onclick="searchRecord()">Status Check Karein</button>
+    <div id="customerRecordList">
+        <p style="text-align:center; color:#777;">Live data load ho raha hai...</p>
     </div>
-
-    <div id="loading">Searching Records...</div>
-    <div id="notFound">⚠️ Is Detail Ka Koi Record Nahi Mila!</div>
-
-    <!-- Search Results Container -->
-    <div id="resultsContainer"></div>
 </div>
 
 <script>
@@ -84,89 +40,58 @@
         messagingSenderId: "768803895002",
         appId: "1:768803895002:web:8a666e728b48cfcc2817e3"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    async function searchRecord() {
-        const accountIdInput = document.getElementById('searchAccountId').value.trim();
-        const selectedFoundation = document.getElementById('searchFoundation').value;
-        const selectedMonth = document.getElementById('searchMonth').value;
+    // ⚠️ Ahem Step: Yahan Admin Panel se mila hua Admin UID paste karein
+    const ADMIN_UID = "ADMIN_USER_UID_YAHAN_RAKHEIN"; 
 
-        const resultsDiv = document.getElementById('resultsContainer');
-        const loadingDiv = document.getElementById('loading');
-        const notFoundDiv = document.getElementById('notFound');
+    let allRecords = [];
 
-        resultsDiv.innerHTML = '';
-        notFoundDiv.style.display = 'none';
+    // Instant Real-Time Sync Listener
+    db.collection('shops').doc(ADMIN_UID).collection('records')
+      .onSnapshot(snapshot => {
+          allRecords = [];
+          snapshot.forEach(doc => {
+              allRecords.push({ id: doc.id, ...doc.data() });
+          });
+          renderCustomerUI(allRecords);
+      }, err => {
+          document.getElementById('customerRecordList').innerHTML = `<p style="color:red; text-align:center;">Data Load Error: Admin UID Verify Karein</p>`;
+      });
 
-        if (!accountIdInput) {
-            alert('Lutfan Account ID zaroor darj karein!');
+    function renderCustomerUI(records) {
+        const list = document.getElementById('customerRecordList');
+        list.innerHTML = '';
+
+        if(records.length === 0) {
+            list.innerHTML = `<p style="text-align:center; color:#777;">Koi record majood nahi hai.</p>`;
             return;
         }
 
-        loadingDiv.style.display = 'block';
+        records.forEach(item => {
+            list.innerHTML += `
+                <div class="card">
+                    <span class="status-badge ${item.status}">${item.status}</span>
+                    <h4 style="color:#1b2a47;">${item.name}</h4>
+                    <p style="font-size:13px; color:#555; margin-top:4px;">
+                        <b>Account ID:</b> ${item.accountId}<br>
+                        <b>Foundation:</b> ${item.foundation}<br>
+                        <b>Amount:</b> Rs. ${item.amount}<br>
+                        <b>Date:</b> ${item.paymentDate}
+                    </p>
+                </div>
+            `;
+        });
+    }
 
-        try {
-            const snapshot = await db.collectionGroup('records')
-                                     .where('accountId', '==', accountIdInput)
-                                     .get();
-
-            loadingDiv.style.display = 'none';
-
-            if (snapshot.empty) {
-                notFoundDiv.style.display = 'block';
-                return;
-            }
-
-            let matchesCount = 0;
-
-            snapshot.forEach(doc => {
-                const item = doc.data();
-
-                const matchesFoundation = (selectedFoundation === 'All' || item.foundation === selectedFoundation);
-                const matchesMonth = (!selectedMonth || item.month === selectedMonth);
-
-                if (matchesFoundation && matchesMonth) {
-                    matchesCount++;
-                    const isPaid = item.status === 'Paid';
-
-                    const card = document.createElement('div');
-                    card.className = `record-card ${isPaid ? 'status-paid' : 'status-unpaid'}`;
-                    
-                    card.innerHTML = `
-                        <div class="row-flex">
-                            <span style="font-size: 13px; font-weight: bold; background: #eef2f5; padding: 4px 8px; border-radius: 6px;">${item.foundation}</span>
-                            <span class="badge ${isPaid ? 'badge-paid' : 'badge-unpaid'}">${item.status}</span>
-                        </div>
-                        <div class="row-flex" style="margin-top: 8px;">
-                            <span style="font-size: 17px; font-weight: bold;">${item.name}</span>
-                            <span class="amount">Rs ${item.amount}</span>
-                        </div>
-                        <div class="meta-info">🆔 Account ID: <b>${item.accountId}</b></div>
-                        <div class="meta-info">📅 Tareekh: <b>${item.paymentDate}</b></div>
-                        ${isPaid ? `<div class="meta-info">🧾 TRX ID: <b>${item.trxId}</b></div>` : ''}
-                        ${isPaid ? `<div class="meta-info">💳 Paid Via: <b>${item.paidVia}</b></div>` : ''}
-                        
-                        <div class="shop-info-box">
-                            🏪 <b>Dukan:</b> ${item.shopName || 'Mobile Shop'}<br>
-                            📞 <b>Dukandar Contact:</b> ${item.shopPhone || 'N/A'}
-                        </div>
-                    `;
-                    resultsDiv.appendChild(card);
-                }
-            });
-
-            if (matchesCount === 0) {
-                notFoundDiv.style.display = 'block';
-            }
-
-        } catch (error) {
-            loadingDiv.style.display = 'none';
-            alert("Error searching records: " + error.message);
-        }
+    function filterData() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allRecords.filter(r => 
+            r.name.toLowerCase().includes(q) || r.accountId.toLowerCase().includes(q)
+        );
+        renderCustomerUI(filtered);
     }
 </script>
-
 </body>
 </html>
