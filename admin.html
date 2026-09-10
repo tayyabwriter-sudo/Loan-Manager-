@@ -3,207 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loan Manager Pro (Admin Panel)</title>
-    <!-- Firebase SDKs -->
+    <title>Loan Manager Pro - Admin Panel</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
         body { background-color: #f2f4f7; color: #333; padding-bottom: 30px; }
-        
-        .header { background: #1b2a47; color: #fff; padding: 16px 18px; text-align: center; font-size: 18px; font-weight: bold; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; }
-        .header-btns { display: flex; gap: 8px; }
-        .head-btn { background: #2c3e50; border: 1px solid #455a64; color: #fff; font-size: 13px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
-        .logout-btn { background: #c0392b; border-color: #a93226; }
-        
+        .header { background: #1b2a47; color: #fff; padding: 15px; text-align: center; display: flex; justify-content: space-between; align-items: center; }
         .container { padding: 15px; max-width: 500px; margin: auto; }
-        .card { background: #ffffff; padding: 16px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
-        .card-title { font-size: 16px; font-weight: 600; color: #1b2a47; margin-bottom: 12px; }
-        
-        .form-control { width: 100%; padding: 12px; border: 1px solid #dcdfe6; border-radius: 8px; font-size: 14px; margin-bottom: 10px; background: #fafafa; outline: none; }
-        .form-control:focus { border-color: #27ae60; background: #fff; }
-
-        #paidFieldsWrapper { display: none; background: #eef9f2; padding: 10px; border-radius: 8px; border: 1px solid #c8e6c9; margin-bottom: 10px; }
-
-        .btn-main { width: 100%; background: #27ae60; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-main:active { background: #1e8449; }
-
-        .filter-row { display: flex; flex-direction: column; gap: 8px; }
-
-        .stats-grid { display: flex; gap: 8px; margin-top: 12px; }
-        .stat-card { flex: 1; background: #f8f9fa; border-radius: 8px; padding: 10px; text-align: center; border: 1px solid #e9ecef; }
-        .stat-card .num { font-size: 15px; font-weight: bold; margin-top: 4px; }
-        .stat-paid { color: #27ae60; }
-        .stat-unpaid { color: #e74c3c; }
-
-        .record-card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #ccc; display: flex; flex-direction: column; gap: 6px; }
-        .record-card.status-paid-border { border-left-color: #27ae60; }
-        .record-card.status-unpaid-border { border-left-color: #e74c3c; }
-
-        .record-header { display: flex; justify-content: space-between; align-items: center; }
-        .foundation-badge { background: #eef2f5; color: #1b2a47; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-        .amount { font-size: 18px; font-weight: bold; color: #2c3e50; }
-        
-        .borrower-name { font-weight: 600; color: #2c3e50; font-size: 16px; }
-        .meta-text { font-size: 12px; color: #666; margin-top: 2px; }
-
-        .record-body { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        .badge-paid { background: #d4edda; color: #155724; }
-        .badge-unpaid { background: #f8d7da; color: #721c24; }
-
-        .actions { display: flex; gap: 8px; margin-top: 8px; }
-        .btn-act { flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .btn-toggle { background: #ebf5ff; color: #0066cc; }
-        .btn-del { background: #fff0f0; color: #d93025; }
-
-        .whatsapp-btn { background: #25D366; color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(37,211,102,0.3); margin-top: 15px; }
-
-        #authSection { max-width: 400px; margin: 40px auto; }
-        .auth-toggle { text-align: center; margin-top: 10px; color: #0066cc; cursor: pointer; font-size: 14px; }
-
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-body { background: #fff; width: 90%; max-width: 450px; border-radius: 12px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .modal-header h3 { font-size: 18px; color: #1b2a47; }
-        .close-modal { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
-        .setting-field { margin-bottom: 10px; }
-        .setting-field label { font-size: 12px; font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
+        .card { background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-control { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; }
+        .btn-main { width: 100%; background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .uid-box { background: #eef2f5; padding: 10px; border-radius: 6px; font-size: 12px; word-break: break-all; margin-bottom: 10px; border: 1px dashed #1b2a47; }
+        .record-card { background: #fff; border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 5px solid #e74c3c; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        .record-card.Paid { border-left-color: #27ae60; }
     </style>
 </head>
 <body>
 
-<!-- AUTH SECTION -->
-<div id="authSection" class="container">
+<div id="authSection" class="container" style="margin-top: 50px;">
     <div class="card">
-        <div class="card-title" id="authTitle" style="text-align:center;">Dukandar Login</div>
-        <input type="email" id="authEmail" class="form-control" placeholder="Email Address">
-        <input type="password" id="authPassword" class="form-control" placeholder="Password (Min 6 chars)">
-        
-        <div id="extraSignupFields" style="display:none;">
-            <input type="text" id="authShopName" class="form-control" placeholder="Dukan Ka Naam (Shop Name)">
-            <input type="text" id="authShopPhone" class="form-control" placeholder="Dukandar Mobile Number">
-        </div>
-
-        <button class="btn-main" id="authSubmitBtn" onclick="handleAuth()">Login</button>
-        <div class="auth-toggle" onclick="toggleAuthMode()" id="authToggleText">Naya Account Banayein (Register)</div>
+        <h3>Dukandar Login / Register</h3>
+        <input type="email" id="authEmail" class="form-control" placeholder="Email">
+        <input type="password" id="authPassword" class="form-control" placeholder="Password">
+        <button class="btn-main" onclick="handleLogin()">Login</button>
     </div>
 </div>
 
-<!-- MAIN APP SECTION -->
 <div id="appSection" style="display:none;">
     <div class="header">
-        <span id="shopTitleHeader">📱 Loan Manager Pro</span>
-        <div class="header-btns">
-            <button class="head-btn" onclick="openSettingsModal()">⚙️ Settings</button>
-            <button class="head-btn logout-btn" onclick="logout()">Logout</button>
-        </div>
+        <span id="shopTitle">📱 Loan Manager Pro</span>
+        <button onclick="auth.signOut()" style="background:#c0392b; color:#fff; border:none; padding:6px 10px; border-radius:4px;">Logout</button>
     </div>
 
     <div class="container">
-        <!-- Entry Form -->
+        <!-- Admin UID Info Box -->
+        <div class="uid-box">
+            <b>🔑 Aapka Admin UID (Customer Portal ke liye):</b><br>
+            <span id="adminUidDisplay">Loading...</span>
+        </div>
+
         <div class="card">
-            <div class="card-title">Naya Record Shamil Karein</div>
+            <h4>Naya Record Add Karein</h4>
             <select id="foundation" class="form-control">
-                <option value="">Foundation Select Karein</option>
                 <option value="Kashif">Kashif</option>
                 <option value="RCDP">RCDP</option>
                 <option value="NRSP">NRSP</option>
-                <option value="Halan Bank">Halan Bank</option>
-                <option value="JWS">JWS</option>
             </select>
-            <input type="text" id="accountId" class="form-control" placeholder="Account ID / Loan No">
+            <input type="text" id="accountId" class="form-control" placeholder="Account / Loan ID">
             <input type="text" id="borrowerName" class="form-control" placeholder="Name">
-            <input type="number" id="amount" class="form-control" placeholder="Installment Amount (Rs)">
-            
-            <label style="font-size:12px; font-weight:bold; color:#555; display:block; margin-bottom:4px;">Qist Ki Tareekh (Date):</label>
+            <input type="number" id="amount" class="form-control" placeholder="Amount (Rs)">
             <input type="date" id="paymentDate" class="form-control">
-            
-            <select id="statusSelect" class="form-control" onchange="togglePaidFields()">
-                <option value="Unpaid">Unpaid</option>
-                <option value="Paid">Paid</option>
-            </select>
-
-            <div id="paidFieldsWrapper">
-                <input type="text" id="trxId" class="form-control" placeholder="TRX ID">
-                <select id="paidVia" class="form-control" style="margin-bottom:0;">
-                    <option value="N/A">Paid Via (Account Select Karein)</option>
-                    <option value="JazzCash">JazzCash</option>
-                    <option value="EasyPaisa">EasyPaisa</option>
-                    <option value="NayaPay">NayaPay</option>
-                    <option value="SadaPay">SadaPay</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Cash">Cash Handover</option>
-                </select>
-            </div>
-            
-            <button class="btn-main" id="saveBtn" onclick="addRecord()">+ Save Record</button>
+            <button class="btn-main" id="saveBtn" onclick="addRecord()">+ Instant Save Online</button>
         </div>
 
-        <!-- Filter Section -->
-        <div class="card">
-            <div class="card-title">Record Filter Karein</div>
-            <div class="filter-row">
-                <div>
-                    <label style="font-size:12px; font-weight:bold; color:#555;">Foundation Category:</label>
-                    <select id="filterFoundation" class="form-control" style="margin-bottom:8px;" onchange="displayRecords()">
-                        <option value="All">All Foundations (Tamam)</option>
-                        <option value="Kashif">Kashif</option>
-                        <option value="RCDP">RCDP</option>
-                        <option value="NRSP">NRSP</option>
-                        <option value="Halan Bank">Halan Bank</option>
-                        <option value="JWS">JWS</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:12px; font-weight:bold; color:#555;">Mahina Select Karein:</label>
-                    <input type="month" id="filterMonth" class="form-control" style="margin-bottom:0;" onchange="displayRecords()">
-                </div>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div>Total</div>
-                    <div class="num" id="totalStat">Rs 0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-paid">Paid</div>
-                    <div class="num stat-paid" id="paidStat">Rs 0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-unpaid">Unpaid</div>
-                    <div class="num stat-unpaid" id="unpaidStat">Rs 0</div>
-                </div>
-            </div>
-        </div>
-
-        <div id="recordList"></div>
-
-        <button class="whatsapp-btn" onclick="sendWhatsAppReport()">
-            <span>💬 WhatsApp Par Report Bhejein</span>
-        </button>
-    </div>
-</div>
-
-<!-- Settings Popup Modal -->
-<div class="modal-overlay" id="settingsModal">
-    <div class="modal-body">
-        <div class="modal-header">
-            <h3>⚙️ Dukan & Settings</h3>
-            <button class="close-modal" onclick="closeSettingsModal()">✕</button>
-        </div>
-        <div class="setting-field"><label>Dukan Ka Naam:</label><input type="text" id="myShopName" class="form-control"></div>
-        <div class="setting-field"><label>Dukandar Mobile Number:</label><input type="text" id="myShopPhone" class="form-control"></div>
-        <hr style="margin:10px 0;">
-        <p style="font-size:12px; color:#666; margin-bottom:8px;"><b>Foundation WhatsApp Numbers:</b> (e.g. 923001234567)</p>
-        <div class="setting-field"><label>Kashif Number:</label><input type="text" id="num_Kashif" class="form-control"></div>
-        <div class="setting-field"><label>RCDP Number:</label><input type="text" id="num_RCDP" class="form-control"></div>
-        <div class="setting-field"><label>NRSP Number:</label><input type="text" id="num_NRSP" class="form-control"></div>
-        <div class="setting-field"><label>Halan Bank Number:</label><input type="text" id="num_Halan Bank" class="form-control"></div>
-        <div class="setting-field"><label>JWS Number:</label><input type="text" id="num_JWS" class="form-control"></div>
-
-        <button class="btn-main" onclick="saveSettings()">Save Settings</button>
+        <div id="adminRecordList"></div>
     </div>
 </div>
 
@@ -216,102 +71,30 @@
         messagingSenderId: "768803895002",
         appId: "1:768803895002:web:8a666e728b48cfcc2817e3"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Enable offline data persistence explicitly
-    db.enablePersistence().catch(err => console.log("Persistence status:", err.code));
-
     let currentUser = null;
-    let records = [];
-    let whatsappNumbers = {};
-    let shopProfile = { shopName: 'Khalid Mobile', shopPhone: '' };
-    let isLoginMode = true;
-    let unsubscribeRecords = null;
-
-    const today = new Date();
-    document.getElementById('paymentDate').value = today.toISOString().slice(0, 10);
-    document.getElementById('filterMonth').value = today.toISOString().slice(0, 7);
 
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('appSection').style.display = 'block';
-            loadUserData();
+            document.getElementById('adminUidDisplay').innerText = user.uid;
+            listenToLiveRecords();
         } else {
-            currentUser = null;
-            if(unsubscribeRecords) unsubscribeRecords();
             document.getElementById('authSection').style.display = 'block';
             document.getElementById('appSection').style.display = 'none';
         }
     });
 
-    function toggleAuthMode() {
-        isLoginMode = !isLoginMode;
-        document.getElementById('authTitle').innerText = isLoginMode ? 'Dukandar Login' : 'Naya Account Register Karein';
-        document.getElementById('authSubmitBtn').innerText = isLoginMode ? 'Login' : 'Register Account';
-        document.getElementById('authToggleText').innerText = isLoginMode ? 'Naya Account Banayein (Register)' : 'Pehle se account hai? Login karein';
-        document.getElementById('extraSignupFields').style.display = isLoginMode ? 'none' : 'block';
-    }
-
-    function handleAuth() {
-        const email = document.getElementById('authEmail').value.trim();
-        const password = document.getElementById('authPassword').value.trim();
-
-        if (!email || !password) {
-            alert('Email aur Password dono likhein!');
-            return;
-        }
-
-        if (isLoginMode) {
-            auth.signInWithEmailAndPassword(email, password).catch(err => alert("Login Error: " + err.message));
-        } else {
-            const shopName = document.getElementById('authShopName').value.trim();
-            const shopPhone = document.getElementById('authShopPhone').value.trim();
-            
-            if(!shopName || !shopPhone){
-                alert('Dukan ka Naam aur Phone Number zaroor darj karein!');
-                return;
-            }
-
-            auth.createUserWithEmailAndPassword(email, password).then((cred) => {
-                db.collection('users').doc(cred.user.uid).collection('settings').doc('profile').set({
-                    shopName: shopName,
-                    shopPhone: shopPhone
-                });
-                alert("Account ban gaya hai!");
-            }).catch(err => alert("Registration Error: " + err.message));
-        }
-    }
-
-    function logout() { auth.signOut(); }
-
-    function loadUserData() {
-        if (!currentUser) return;
-
-        db.collection('users').doc(currentUser.uid).collection('settings').doc('profile').get().then(doc => {
-            if(doc.exists){
-                shopProfile = doc.data();
-                document.getElementById('shopTitleHeader').innerText = "📱 " + (shopProfile.shopName || "Loan Manager");
-            }
-        });
-
-        if (unsubscribeRecords) unsubscribeRecords();
-
-        // Single Dual-Write Path Fix
-        unsubscribeRecords = db.collection('shops').doc(currentUser.uid).collection('records').onSnapshot(snapshot => {
-            records = [];
-            snapshot.forEach(doc => {
-                records.push({ docId: doc.id, ...doc.data() });
-            });
-            displayRecords();
-        }, err => alert("Data Fetch Error: " + err.message));
-
-        db.collection('users').doc(currentUser.uid).collection('settings').doc('numbers').get().then(doc => {
-            if (doc.exists) whatsappNumbers = doc.data();
+    function handleLogin() {
+        const e = document.getElementById('authEmail').value;
+        const p = document.getElementById('authPassword').value;
+        auth.signInWithEmailAndPassword(e, p).catch(err => {
+            auth.createUserWithEmailAndPassword(e, p).catch(e2 => alert(e2.message));
         });
     }
 
@@ -321,214 +104,40 @@
         const name = document.getElementById('borrowerName').value.trim();
         const amount = document.getElementById('amount').value;
         const paymentDate = document.getElementById('paymentDate').value;
-        const status = document.getElementById('statusSelect').value;
-        const trxId = document.getElementById('trxId').value.trim();
-        const paidVia = document.getElementById('paidVia').value;
 
-        if (!foundation || !accountId || !name || !amount || !paymentDate) {
-            alert('Sari zaroori fields (Foundation, Account ID, Name, Amount, Date) darj karein!');
-            return;
-        }
+        if (!accountId || !name || !amount) { alert('Sari fields bharein!'); return; }
 
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.disabled = true;
-        saveBtn.innerText = "Online Save Ho Raha Hai...";
-
-        const newRecord = {
-            userId: currentUser.uid,
-            foundation: foundation,
-            accountId: accountId,
-            name: name,
+        // Live Write Direct to Global Customer Path
+        await db.collection('shops').doc(currentUser.uid).collection('records').add({
+            foundation, accountId, name,
             amount: parseFloat(amount),
-            paymentDate: paymentDate,
-            month: paymentDate.slice(0, 7),
-            status: status,
-            trxId: status === 'Paid' ? (trxId || 'N/A') : 'N/A',
-            paidVia: status === 'Paid' ? paidVia : 'N/A',
-            shopName: shopProfile.shopName || 'Khalid Mobile',
-            shopPhone: shopProfile.shopPhone || 'N/A',
+            paymentDate,
+            status: 'Unpaid',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        try {
-            // Write to global reachable location for Customer Portal & Admin Sync
-            await db.collection('shops').doc(currentUser.uid).collection('records').add(newRecord);
-
-            document.getElementById('accountId').value = '';
-            document.getElementById('borrowerName').value = '';
-            document.getElementById('amount').value = '';
-            document.getElementById('trxId').value = '';
-            document.getElementById('statusSelect').value = 'Unpaid';
-            togglePaidFields();
-            alert("✅ Record Firestore Online Database Mein Save Ho Gaya!");
-        } catch (err) {
-            alert("❌ Firebase Server Error: " + err.message);
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerText = "+ Save Record";
-        }
-    }
-
-    function toggleStatus(docId, currentStatus) {
-        const newStatus = currentStatus === 'Unpaid' ? 'Paid' : 'Unpaid';
-        let trx = 'N/A', via = 'N/A';
-
-        if (newStatus === 'Paid') {
-            trx = prompt('TRX ID enter karein (optional):') || 'N/A';
-            via = prompt('Account / Method enter karein (e.g. EasyPaisa, Cash):') || 'N/A';
-        }
-
-        db.collection('shops').doc(currentUser.uid).collection('records').doc(docId).update({
-            status: newStatus,
-            trxId: trx,
-            paidVia: via
-        });
-    }
-
-    function deleteRecord(docId) {
-        if (confirm('Kya aap yeh record delete karna chahte hain?')) {
-            db.collection('shops').doc(currentUser.uid).collection('records').doc(docId).delete();
-        }
-    }
-
-    function displayRecords() {
-        const selectedMonth = document.getElementById('filterMonth').value;
-        const selectedFoundation = document.getElementById('filterFoundation').value;
-        const listContainer = document.getElementById('recordList');
-        listContainer.innerHTML = '';
-
-        const filtered = records.filter(item => {
-            return (item.month === selectedMonth) && (selectedFoundation === 'All' || item.foundation === selectedFoundation);
         });
 
-        let total = 0, paid = 0, unpaid = 0;
+        document.getElementById('accountId').value = '';
+        document.getElementById('borrowerName').value = '';
+        document.getElementById('amount').value = '';
+        alert("✅ Record Online Upload Ho Gaya!");
+    }
 
-        if (filtered.length === 0) {
-            listContainer.innerHTML = '<div style="text-align:center; padding: 20px; color: #777;">Is month ka koi record nahi hai.</div>';
-        } else {
-            filtered.forEach(item => {
-                total += item.amount;
-                if(item.status === 'Paid') paid += item.amount;
-                else unpaid += item.amount;
-
-                const isPaid = item.status === 'Paid';
-                const card = document.createElement('div');
-                card.className = `record-card ${isPaid ? 'status-paid-border' : 'status-unpaid-border'}`;
-                
-                card.innerHTML = `
-                    <div class="record-header">
-                        <span class="foundation-badge">${item.foundation}</span>
-                        <span class="amount">Rs ${item.amount}</span>
-                    </div>
-                    <div class="borrower-name">${item.name}</div>
-                    <div class="meta-text">🆔 Account ID: <b>${item.accountId}</b></div>
-                    <div class="meta-text">📅 Date: <b>${item.paymentDate}</b></div>
-                    ${isPaid ? `<div class="meta-text">🧾 TRX ID: <b>${item.trxId}</b></div>` : ''}
-                    ${isPaid ? `<div class="meta-text">💳 Paid Via: <b>${item.paidVia}</b></div>` : ''}
-                    
-                    <div class="record-body">
-                        <span class="status-badge ${isPaid ? 'badge-paid' : 'badge-unpaid'}">${item.status}</span>
-                    </div>
-                    
-                    <div class="actions">
-                        <button class="btn-act btn-toggle" onclick="toggleStatus('${item.docId}', '${item.status}')">Mark ${isPaid ? 'Unpaid' : 'Paid'}</button>
-                        <button class="btn-act btn-del" onclick="deleteRecord('${item.docId}')">Delete</button>
+    function listenToLiveRecords() {
+        db.collection('shops').doc(currentUser.uid).collection('records').orderBy('createdAt', 'desc')
+        .onSnapshot(snapshot => {
+            const list = document.getElementById('adminRecordList');
+            list.innerHTML = '';
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                list.innerHTML += `
+                    <div class="record-card ${data.status}">
+                        <b>${data.name}</b> (${data.foundation}) - Rs. ${data.amount}<br>
+                        <small>ID: ${data.accountId} | Status: <b>${data.status}</b></small>
                     </div>
                 `;
-                listContainer.appendChild(card);
             });
-        }
-
-        document.getElementById('totalStat').innerText = `Rs ${total}`;
-        document.getElementById('paidStat').innerText = `Rs ${paid}`;
-        document.getElementById('unpaidStat').innerText = `Rs ${unpaid}`;
-    }
-
-    function togglePaidFields() {
-        document.getElementById('paidFieldsWrapper').style.display = (document.getElementById('statusSelect').value === 'Paid') ? 'block' : 'none';
-    }
-
-    function openSettingsModal() {
-        document.getElementById('myShopName').value = shopProfile.shopName || '';
-        document.getElementById('myShopPhone').value = shopProfile.shopPhone || '';
-        document.getElementById('num_Kashif').value = whatsappNumbers['Kashif'] || '';
-        document.getElementById('num_RCDP').value = whatsappNumbers['RCDP'] || '';
-        document.getElementById('num_NRSP').value = whatsappNumbers['NRSP'] || '';
-        document.getElementById('num_Halan Bank').value = whatsappNumbers['Halan Bank'] || '';
-        document.getElementById('num_JWS').value = whatsappNumbers['JWS'] || '';
-        document.getElementById('settingsModal').style.display = 'flex';
-    }
-
-    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
-
-    function saveSettings() {
-        shopProfile = {
-            shopName: document.getElementById('myShopName').value.trim(),
-            shopPhone: document.getElementById('myShopPhone').value.trim()
-        };
-
-        whatsappNumbers = {
-            'Kashif': document.getElementById('num_Kashif').value.trim(),
-            'RCDP': document.getElementById('num_RCDP').value.trim(),
-            'NRSP': document.getElementById('num_NRSP').value.trim(),
-            'Halan Bank': document.getElementById('num_Halan Bank').value.trim(),
-            'JWS': document.getElementById('num_JWS').value.trim()
-        };
-
-        db.collection('users').doc(currentUser.uid).collection('settings').doc('profile').set(shopProfile);
-        db.collection('users').doc(currentUser.uid).collection('settings').doc('numbers').set(whatsappNumbers).then(() => {
-            alert('Settings save ho gayi hain!');
-            document.getElementById('shopTitleHeader').innerText = "📱 " + (shopProfile.shopName || "Loan Manager");
-            closeSettingsModal();
         });
-    }
-
-    function sendWhatsAppReport() {
-        const selectedMonth = document.getElementById('filterMonth').value;
-        const selectedFoundation = document.getElementById('filterFoundation').value;
-
-        const filtered = records.filter(item => {
-            return (item.month === selectedMonth) && (selectedFoundation === 'All' || item.foundation === selectedFoundation);
-        });
-
-        if (filtered.length === 0) {
-            alert('Is selection ki report k liye koi record majood nahi hai.');
-            return;
-        }
-
-        let message = `*📊 Loan Report (${selectedFoundation} - ${selectedMonth})*\n------------------------------\n`;
-        let totalAmount = 0, totalPaid = 0, totalUnpaid = 0;
-
-        filtered.forEach((item, index) => {
-            message += `${index + 1}. *${item.foundation}* | ${item.name}\n`;
-            message += `   • Account ID: ${item.accountId}\n`;
-            message += `   • Amount: Rs. ${item.amount}\n`;
-            message += `   • Date: ${item.paymentDate}\n`;
-            message += `   • Status: *${item.status}*\n`;
-            if (item.status === 'Paid') {
-                message += `   • TRX ID: ${item.trxId}\n`;
-                message += `   • Paid Via: ${item.paidVia}\n`;
-            }
-            message += `\n`;
-
-            totalAmount += item.amount;
-            if(item.status === 'Paid') totalPaid += item.amount;
-            else totalUnpaid += item.amount;
-        });
-
-        message += `------------------------------\n`;
-        message += `*Total Amount:* Rs. ${totalAmount}\n`;
-        message += `*Paid Amount:* Rs. ${totalPaid}\n`;
-        message += `*Remaining Unpaid:* Rs. ${totalUnpaid}\n`;
-
-        let targetNumber = (selectedFoundation !== 'All' && whatsappNumbers[selectedFoundation]) ? whatsappNumbers[selectedFoundation] : '';
-        let whatsappUrl = targetNumber 
-            ? `https://api.whatsapp.com/send?phone=${targetNumber}&text=${encodeURIComponent(message)}`
-            : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-
-        window.open(whatsappUrl, '_blank');
     }
 </script>
-
 </body>
 </html>
