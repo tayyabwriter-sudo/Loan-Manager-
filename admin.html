@@ -138,7 +138,7 @@
                 </select>
             </div>
             
-            <button class="btn-main" onclick="addRecord()">+ Save Record</button>
+            <button class="btn-main" id="saveBtn" onclick="addRecord()">+ Save Record</button>
         </div>
 
         <!-- Filter Section -->
@@ -224,7 +224,7 @@
     let currentUser = null;
     let records = [];
     let whatsappNumbers = {};
-    let shopProfile = { shopName: 'Mobile Shop', shopPhone: '' };
+    let shopProfile = { shopName: 'Khalid Mobile', shopPhone: '' };
     let isLoginMode = true;
     let unsubscribeRecords = null;
 
@@ -298,7 +298,8 @@
 
         if (unsubscribeRecords) unsubscribeRecords();
 
-        unsubscribeRecords = db.collection('users').doc(currentUser.uid).collection('records').onSnapshot(snapshot => {
+        // Fixed Collection Group Listening Path for real-time Sync
+        unsubscribeRecords = db.collection('shops').doc(currentUser.uid).collection('records').onSnapshot(snapshot => {
             records = [];
             snapshot.forEach(doc => {
                 records.push({ docId: doc.id, ...doc.data() });
@@ -311,7 +312,7 @@
         });
     }
 
-    function addRecord() {
+    async function addRecord() {
         const foundation = document.getElementById('foundation').value;
         const accountId = document.getElementById('accountId').value.trim();
         const name = document.getElementById('borrowerName').value.trim();
@@ -321,34 +322,48 @@
         const trxId = document.getElementById('trxId').value.trim();
         const paidVia = document.getElementById('paidVia').value;
 
-        if (!foundation || !name || !amount || !paymentDate) {
-            alert('Foundation, Name, Amount aur Date lazmi darj karein!');
+        if (!foundation || !name || !amount || !paymentDate || !accountId) {
+            alert('Foundation, Account ID, Name, Amount aur Date lazmi darj karein!');
             return;
         }
 
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Saving...";
+
         const newRecord = {
-            foundation,
-            accountId: accountId || 'N/A',
-            name,
+            userId: currentUser.uid,
+            foundation: foundation,
+            accountId: accountId,
+            name: name,
             amount: parseFloat(amount),
-            paymentDate,
+            paymentDate: paymentDate,
             month: paymentDate.slice(0, 7),
-            status,
+            status: status,
             trxId: status === 'Paid' ? (trxId || 'N/A') : 'N/A',
             paidVia: status === 'Paid' ? paidVia : 'N/A',
-            shopName: shopProfile.shopName || 'Mobile Shop',
+            shopName: shopProfile.shopName || 'Khalid Mobile',
             shopPhone: shopProfile.shopPhone || 'N/A',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        db.collection('users').doc(currentUser.uid).collection('records').add(newRecord).then(() => {
+        try {
+            // Customer Portal Compatibility Path
+            await db.collection('shops').doc(currentUser.uid).collection('records').add(newRecord);
+            
             document.getElementById('accountId').value = '';
             document.getElementById('borrowerName').value = '';
             document.getElementById('amount').value = '';
             document.getElementById('trxId').value = '';
             document.getElementById('statusSelect').value = 'Unpaid';
             togglePaidFields();
-        }).catch(err => alert("Record add nahi ho saka: " + err.message));
+            alert("✅ Record DataBase mein Save ho gaya hai!");
+        } catch (err) {
+            alert("Record add nahi ho saka: " + err.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "+ Save Record";
+        }
     }
 
     function toggleStatus(docId, currentStatus) {
@@ -360,7 +375,7 @@
             via = prompt('Account / Method enter karein (e.g. EasyPaisa, Cash):') || 'N/A';
         }
 
-        db.collection('users').doc(currentUser.uid).collection('records').doc(docId).update({
+        db.collection('shops').doc(currentUser.uid).collection('records').doc(docId).update({
             status: newStatus,
             trxId: trx,
             paidVia: via
@@ -369,7 +384,7 @@
 
     function deleteRecord(docId) {
         if (confirm('Kya aap yeh record delete karna chahte hain?')) {
-            db.collection('users').doc(currentUser.uid).collection('records').doc(docId).delete();
+            db.collection('shops').doc(currentUser.uid).collection('records').doc(docId).delete();
         }
     }
 
