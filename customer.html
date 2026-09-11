@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Loan Portal - Auto Live View</title>
+    <title>Customer Loan Portal - Multi Shop View</title>
     <style>
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
         body { background-color: #f8fafc; color: #1e293b; padding-bottom: 40px; }
@@ -14,7 +14,7 @@
         .card { background: #ffffff; padding: 16px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .card-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
 
-        .form-control { width: 100%; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #fff; outline: none; transition: border-color 0.2s; }
+        .form-control { width: 100%; padding: 11px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #fff; outline: none; transition: border-color 0.2s; }
         .form-control:focus { border-color: #0284c7; }
 
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
@@ -39,7 +39,7 @@
         .badge-foundation { background: #f1f5f9; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
         .record-amount { font-size: 17px; font-weight: bold; color: #0f172a; }
 
-        .shop-badge { font-size: 12px; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; margin-top: 2px; }
+        .shop-badge { font-size: 13px; color: #0284c7; background: #e0f2fe; padding: 5px 10px; border-radius: 6px; font-weight: 700; display: inline-block; width: fit-content; margin-top: 2px; border: 1px solid #bae6fd; }
         .meta-line { font-size: 13px; color: #64748b; }
         .status-pill { align-self: flex-start; margin-top: 4px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .pill-paid { background: #dcfce7; color: #15803d; }
@@ -52,17 +52,22 @@
 <body>
 
 <div class="header">
-    📱 Foundation Installment Portal
+    📱 Foundation Loan & Installment Portal
 </div>
 
 <div class="container">
-    <!-- Category & Filter Bar -->
+    <!-- Category & Shop Filters -->
     <div class="card">
-        <div class="card-title">Select Foundation / Filter:</div>
+        <div class="card-title">Filter by Shop / Foundation:</div>
         <div class="filter-grid">
-            <!-- Category Dropdown -->
+            <!-- Dynamic Shop Name Dropdown -->
+            <select id="custFilterShop" class="form-control" onchange="liveUpdate()">
+                <option value="All">🏪 Tamam Shops (All)</option>
+            </select>
+
+            <!-- Foundation Category Dropdown -->
             <select id="custFilterCategory" class="form-control" onchange="liveUpdate()">
-                <option value="All">Tamam Foundations (All)</option>
+                <option value="All">🏢 Tamam Foundations</option>
                 <option value="Kashif">Kashif</option>
                 <option value="RCDP">RCDP</option>
                 <option value="NRSP">NRSP</option>
@@ -74,14 +79,14 @@
             <input type="month" id="custFilterMonth" class="form-control" onchange="liveUpdate()">
 
             <!-- Optional Search Box -->
-            <input type="text" id="accountSearchInput" class="form-control full-width" placeholder="🔍 Search Account ID ya Naam (Optional)..." oninput="liveUpdate()">
+            <input type="text" id="accountSearchInput" class="form-control" placeholder="🔍 Search ID / Naam..." oninput="liveUpdate()">
         </div>
     </div>
 
     <!-- Live Auto Output -->
     <div id="portalContent">
         <div style="font-size:12px; color:#64748b; margin-bottom:8px; text-align:right;">
-            <span class="live-dot"></span><b>Live Sync Active</b>
+            <span class="live-dot"></span><b>Live Dynamic View</b>
         </div>
 
         <div class="stats-summary">
@@ -104,7 +109,7 @@
             </div>
         </div>
 
-        <div class="card-title" style="margin-top: 10px;">Qist History:</div>
+        <div class="card-title" style="margin-top: 10px;">Qist Records:</div>
         <div id="installmentsWrapper"></div>
     </div>
 </div>
@@ -127,36 +132,62 @@
 
     let dbRecords = [];
 
-    // Realtime Firebase Listener (Nayi qist direct auto load ho gi)
+    // Firebase Realtime Listener
     onSnapshot(collection(db, "loans"), (snapshot) => {
         dbRecords = [];
         snapshot.forEach((docSnap) => {
             dbRecords.push(docSnap.data());
         });
 
+        // Unique Shops Auto Populate Dropdown
+        updateShopDropdown();
         window.liveUpdate();
     });
 
+    // Sub Dukanon ke naam automatically dropdown mein add karne ka function
+    function updateShopDropdown() {
+        const shopSelect = document.getElementById('custFilterShop');
+        const selectedVal = shopSelect.value; // current selected retain karein
+
+        // Data me se sari dukanon ke naam nikalna
+        const uniqueShops = [...new Set(dbRecords.map(item => item.shopName || item.shop || 'Other Shop'))];
+
+        shopSelect.innerHTML = '<option value="All">🏪 Tamam Shops (All)</option>';
+        uniqueShops.forEach(shopName => {
+            if(shopName && shopName.trim() !== '') {
+                const opt = document.createElement('option');
+                opt.value = shopName;
+                opt.innerText = `🏪 ${shopName}`;
+                shopSelect.appendChild(opt);
+            }
+        });
+
+        shopSelect.value = selectedVal || "All";
+    }
+
     window.liveUpdate = function() {
         const searchedQuery = document.getElementById('accountSearchInput').value.trim().toLowerCase();
+        const shopFilter = document.getElementById('custFilterShop').value;
         const catFilter = document.getElementById('custFilterCategory').value;
         const monthFilter = document.getElementById('custFilterMonth').value;
 
         const listWrapper = document.getElementById('installmentsWrapper');
 
-        // Filter Logic: Auto Display by Category & Month
+        // Filter Logic: Shop + Category + Month + Search
         let filteredList = dbRecords.filter(item => {
+            const itemShop = item.shopName || item.shop || 'Other Shop';
+            
+            const matchesShop = (shopFilter === 'All' || itemShop === shopFilter);
+            const matchesCat = (catFilter === 'All' || item.foundation === catFilter);
+            const matchesMonth = (!monthFilter || item.month === monthFilter);
             const matchesSearch = !searchedQuery || 
                 (item.accountId && item.accountId.toString().toLowerCase().includes(searchedQuery)) ||
                 (item.name && item.name.toLowerCase().includes(searchedQuery));
 
-            const matchesCat = (catFilter === 'All' || item.foundation === catFilter);
-            const matchesMonth = (!monthFilter || item.month === monthFilter);
-
-            return matchesSearch && matchesCat && matchesMonth;
+            return matchesShop && matchesCat && matchesMonth && matchesSearch;
         });
 
-        // Calculate Totals for auto-selected list
+        // Calculate Totals
         let total = 0, paid = 0, unpaid = 0;
         filteredList.forEach((item) => {
             total += (item.amount || 0);
@@ -164,9 +195,9 @@
             else unpaid += (item.amount || 0);
         });
 
-        // Set View Title
+        // Title View Update
         let viewTitle = "Tamam Records";
-        if (searchedQuery) viewTitle = `Search: "${searchedQuery}"`;
+        if (shopFilter !== 'All') viewTitle = `Shop: ${shopFilter}`;
         else if (catFilter !== 'All') viewTitle = `Foundation: ${catFilter}`;
 
         document.getElementById('dispCustName').innerText = viewTitle;
@@ -177,24 +208,26 @@
         listWrapper.innerHTML = '';
 
         if (filteredList.length === 0) {
-            listWrapper.innerHTML = '<div style="text-align:center; padding: 20px; color: #64748b; background:#fff; border-radius:12px;">Is selection ki koi qist nahi mili.</div>';
+            listWrapper.innerHTML = '<div style="text-align:center; padding: 20px; color: #64748b; background:#fff; border-radius:12px;">Is Selection Ka Koi Record Nahi Mila.</div>';
             return;
         }
 
-        // Render Cards Auto
+        // Render Cards with Specific Shop Name
         filteredList.forEach((item) => {
             const isPaid = item.status === 'Paid';
+            const actualShopName = item.shopName || item.shop || 'Dukan Ka Naam Nahi Likha';
+
             const card = document.createElement('div');
             card.className = `record-card ${isPaid ? 'status-paid' : 'status-unpaid'}`;
             
             card.innerHTML = `
                 <div class="record-top">
-                    <span class="badge-foundation">${item.foundation}</span>
+                    <span class="badge-foundation">${item.foundation || 'General'}</span>
                     <span class="record-amount">Rs ${item.amount}</span>
                 </div>
-                <div style="font-size:15px; font-weight:bold; color:#0f172a; margin-top:2px;">👤 ${item.name} <span style="font-size:12px; color:#64748b; font-weight:normal;">(ID: ${item.accountId})</span></div>
-                <div class="shop-badge">🏪 Received By: <b>${item.shopName || 'Main Shop'}</b></div>
-                <div class="meta-line">📅 Date: <b>${item.paymentDate}</b></div>
+                <div style="font-size:15px; font-weight:bold; color:#0f172a; margin-top:2px;">👤 ${item.name || 'Customer'} <span style="font-size:12px; color:#64748b; font-weight:normal;">(ID: ${item.accountId || 'N/A'})</span></div>
+                <div><span class="shop-badge">🏪 Dukan: <b>${actualShopName}</b></span></div>
+                <div class="meta-line" style="margin-top:4px;">📅 Tareekh: <b>${item.paymentDate || 'N/A'}</b></div>
                 ${isPaid ? `<div class="meta-line">🧾 TRX ID: <b>${item.trxId || 'N/A'}</b></div>` : ''}
                 ${isPaid ? `<div class="meta-line">💳 Method: <b>${item.paidVia || 'N/A'}</b></div>` : ''}
                 <span class="status-pill ${isPaid ? 'pill-paid' : 'pill-unpaid'}">${item.status}</span>
