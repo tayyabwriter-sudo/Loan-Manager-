@@ -15,10 +15,14 @@
         .card { background: #ffffff; padding: 18px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .card-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
 
-        .form-control { width: 100%; padding: 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; margin-bottom: 12px; background: #fff; outline: none; transition: border-color 0.2s; }
+        .form-control { width: 100%; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; background: #fff; outline: none; transition: border-color 0.2s; }
         .form-control:focus { border-color: #0284c7; }
 
-        .btn-search { width: 100%; background: #0284c7; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        /* Search Section Layout */
+        .search-inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .search-inputs-grid .full-width { grid-column: span 2; }
+
+        .btn-search { width: 100%; background: #0284c7; color: white; border: none; padding: 13px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; }
         .btn-search:active { background: #0369a1; }
 
         .stats-summary { background: #0f172a; color: white; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
@@ -40,6 +44,7 @@
         .badge-foundation { background: #f1f5f9; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
         .record-amount { font-size: 17px; font-weight: bold; color: #0f172a; }
 
+        .shop-badge { font-size: 12px; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 6px; font-weight: 600; display: inline-block; width: fit-content; margin-top: 2px; }
         .meta-line { font-size: 13px; color: #64748b; }
         .status-pill { align-self: flex-start; margin-top: 4px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
         .pill-paid { background: #dcfce7; color: #15803d; }
@@ -56,12 +61,32 @@
 </div>
 
 <div class="container">
+    <!-- Search and Category Filters Panel -->
     <div class="card">
-        <div class="card-title">Apna Loan Account ID Enter Karein:</div>
-        <input type="text" id="accountSearchInput" class="form-control" placeholder="e.g. 1024 ya Mobile-01">
-        <button class="btn-search" onclick="searchRecord()">Check Status</button>
+        <div class="card-title">Search & Filter Installments:</div>
+        
+        <div class="search-inputs-grid">
+            <!-- Account ID Search Box -->
+            <input type="text" id="accountSearchInput" class="form-control full-width" placeholder="Account ID (e.g. 1024 ya Mobile-01)" oninput="liveUpdate()">
+            
+            <!-- Category Dropdown -->
+            <select id="custFilterCategory" class="form-control" onchange="liveUpdate()">
+                <option value="All">All Categories</option>
+                <option value="Kashif">Kashif</option>
+                <option value="RCDP">RCDP</option>
+                <option value="NRSP">NRSP</option>
+                <option value="Halan Bank">Halan Bank</option>
+                <option value="JWS">JWS</option>
+            </select>
+
+            <!-- Month Selection -->
+            <input type="month" id="custFilterMonth" class="form-control" onchange="liveUpdate()">
+        </div>
+
+        <button class="btn-search" onclick="liveUpdate()">Search Records</button>
     </div>
 
+    <!-- Live Customer Output -->
     <div id="portalContent" style="display: none;">
         <div style="font-size:12px; color:#64748b; margin-bottom:8px; text-align:right;">
             <span class="live-dot"></span><b>Live Syncing Active</b>
@@ -87,7 +112,7 @@
             </div>
         </div>
 
-        <div class="card-title" style="margin-top: 20px;">Installments History:</div>
+        <div class="card-title" style="margin-top: 10px;">Installments History:</div>
         <div id="installmentsWrapper"></div>
     </div>
 </div>
@@ -109,53 +134,69 @@
     const db = getFirestore(app);
 
     let dbRecords = [];
-    let searchedAccount = "";
 
-    // Read-only Realtime Database Listener
+    // Realtime Firebase Listener (Jab bhi Admin naya record add kare ga, yahan live show hoga)
     onSnapshot(collection(db, "loans"), (snapshot) => {
         dbRecords = [];
         snapshot.forEach((docSnap) => {
             dbRecords.push(docSnap.data());
         });
 
-        if (searchedAccount) {
-            window.renderCustomerView(searchedAccount);
-        }
+        // Live Auto Update
+        window.liveUpdate();
     });
 
-    window.searchRecord = function() {
-        const val = document.getElementById('accountSearchInput').value.trim();
-        if (!val) {
-            alert('Meharbani karke Account ID enter karein.');
-            return;
-        }
-        searchedAccount = val;
-        window.renderCustomerView(val);
-    };
+    window.liveUpdate = function() {
+        const searchedAccount = document.getElementById('accountSearchInput').value.trim();
+        const catFilter = document.getElementById('custFilterCategory').value;
+        const monthFilter = document.getElementById('custFilterMonth').value;
 
-    window.renderCustomerView = function(accId) {
-        const matched = dbRecords.filter(r => r.accountId && r.accountId.toString().toLowerCase() === accId.toLowerCase());
-        
         const mainWrapper = document.getElementById('portalContent');
         const listWrapper = document.getElementById('installmentsWrapper');
 
+        if (!searchedAccount) {
+            mainWrapper.style.display = 'none';
+            return;
+        }
+
+        // Match Account ID
+        let matched = dbRecords.filter(r => r.accountId && r.accountId.toString().toLowerCase() === searchedAccount.toLowerCase());
+
         if (matched.length === 0) {
-            alert('Is Account ID ka koi record nahi mila.');
             mainWrapper.style.display = 'none';
             return;
         }
 
         mainWrapper.style.display = 'block';
-        listWrapper.innerHTML = '';
 
+        // Summary Calculations
         let total = 0, paid = 0, unpaid = 0;
-        let cName = matched[0].name || "Customer";
-
         matched.forEach((item) => {
             total += item.amount;
             if (item.status === 'Paid') paid += item.amount;
             else unpaid += item.amount;
+        });
 
+        document.getElementById('dispCustName').innerText = matched[0].name || "Customer";
+        document.getElementById('dispTotal').innerText = `Rs ${total}`;
+        document.getElementById('dispPaid').innerText = `Rs ${paid}`;
+        document.getElementById('dispUnpaid').innerText = `Rs ${unpaid}`;
+
+        // Category aur Month Filters Apply Karein
+        let filteredList = matched.filter(item => {
+            const matchesCat = (catFilter === 'All' || item.foundation === catFilter);
+            const matchesMonth = (!monthFilter || item.month === monthFilter);
+            return matchesCat && matchesMonth;
+        });
+
+        listWrapper.innerHTML = '';
+
+        if (filteredList.length === 0) {
+            listWrapper.innerHTML = '<div style="text-align:center; padding: 20px; color: #64748b;">Is category/month ke mutabiq koi record nahi mila.</div>';
+            return;
+        }
+
+        filteredList.forEach((item) => {
             const isPaid = item.status === 'Paid';
             const card = document.createElement('div');
             card.className = `record-card ${isPaid ? 'status-paid' : 'status-unpaid'}`;
@@ -165,6 +206,7 @@
                     <span class="badge-foundation">${item.foundation}</span>
                     <span class="record-amount">Rs ${item.amount}</span>
                 </div>
+                <div class="shop-badge">🏪 Received By: <b>${item.shopName || 'Main Shop'}</b></div>
                 <div class="meta-line">📅 Date: <b>${item.paymentDate}</b></div>
                 ${isPaid ? `<div class="meta-line">🧾 TRX ID: <b>${item.trxId || 'N/A'}</b></div>` : ''}
                 ${isPaid ? `<div class="meta-line">💳 Method: <b>${item.paidVia || 'N/A'}</b></div>` : ''}
@@ -172,11 +214,6 @@
             `;
             listWrapper.appendChild(card);
         });
-
-        document.getElementById('dispCustName').innerText = cName;
-        document.getElementById('dispTotal').innerText = `Rs ${total}`;
-        document.getElementById('dispPaid').innerText = `Rs ${paid}`;
-        document.getElementById('dispUnpaid').innerText = `Rs ${unpaid}`;
     };
 </script>
 
